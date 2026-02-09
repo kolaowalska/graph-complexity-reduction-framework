@@ -47,7 +47,7 @@ experiments are managed through the `ExperimentService`, which coordinates the l
 ~~~python
 python src/demo.py
 ~~~
-this small script runs a small selection of scenarios and outputs comparative metric results along with some basic graph visualizations.
+this script runs a small selection of scenarios and outputs comparative metric results along with some basic graph visualizations.
 
 ## extensibility
 ### algorithm agnosticism
