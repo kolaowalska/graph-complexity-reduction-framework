@@ -24,7 +24,7 @@ the framework is built using domain-driven design principles and organized into 
 
 - `domain` layer contains the core truth of the system, such as the `Graph` model, `Metric` definitions, and the abstract `GraphTransform` logic; it is purely focused on graph theory and the mathematics behind the graph algorithms
 - `application` layer orchestrates the workflow via the `ExperimentService`, handling the "business logic" of running a research job without needing to know how graphs are stored and where they come from
-- `infrastructure` layer takes care of details like reading graphs (`GraphGateway`), persisting results (`Repository`), and managing database transactions (`Unit of Work`)
+- `infrastructure` layer takes care of details like reading graphs (`GraphGateway`), persisting results (`Repository`), and managing database transactions (`UnitofWork`)
 - `interface` layer provides entry points for the user including a CLI for automated batches and an API for potential integration with web dashboards
 
 ### the pipeline
