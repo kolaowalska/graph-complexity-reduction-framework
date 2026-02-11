@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from typing import Any, Mapping, MutableMapping, Optional, Dict, Iterable, Tuple, NewType, Callable
 import uuid
 import networkx as nx
+import numpy as np
+import scipy.sparse.linalg as sla
 
 # VALUE OBJECTS
 
@@ -42,7 +44,7 @@ class OperationDescriptor:
 
 class Graph:
     __slots__ = (
-        "_nx", "_loader", "id", "name", "directed", "weighted", "source", "metadata"
+        "_nx", "_loader", "id", "name", "directed", "weighted", "source", "metadata", "_spectral_cache"
     )
 
     def __init__(
@@ -61,6 +63,7 @@ class Graph:
         self.name: str = name or f"graph-{self.id}"
         self.source: Optional[str] = source
         self.metadata: Dict[str, Any] = dict(metadata or {})
+        self._spectral_cache = None
 
         if self._nx:
             self.directed = self._nx.is_directed()
@@ -148,9 +151,36 @@ class Graph:
 
         return float(min(d.get(weight_attr, default) for d in data.values()))
 
+    @property
+    def spectral_properties(self) -> Dict[str, Any]:
+        if self._spectral_cache is None:
+            return self._spectral_cache
+
+        G = self.to_networkx(copy=False)
+        A = nx.to_scipy_sparse_array(G, dtype=float, format="csr") # adjacency matrix
+
+        try:
+            eigenvalues, eigenvectors = sla.eigsh(A, k=1, which="LM")
+            lambda_value = float(eigenvalues[0])
+            v = np.abs(eigenvectors[:, 0]) # flattening & absolute value
+            v = v / np.linalg.norm(v) # normalizing just in case
+        except Exception as e:
+            print(f"sparse eigenvector computation failed ({e}), falling back to dense")
+            eigenvalues, eigenvectors = np.linalg.eigh(nx.to_numpy_array(G))
+            lambda_value = float(eigenvalues[-1])
+            v = np.abs(eigenvectors[:, -1])
+            v = v / np.linalg.norm(v)
+
+        self._spectral_cache = {
+            "lambda": lambda_value,
+            "eigenvector": v,
+            "entropy_rate": np.log(lambda_value)
+        }
+
+        return self._spectral_cache
+
 
     # FACTORIES
-
     @staticmethod
     def from_networkx(g: nx.Graph | nx.DiGraph, *, name: Optional[str] = None, source: Optional[str] = None,
                       metadata: Optional[Mapping[str, Any]] = None) -> "Graph":
