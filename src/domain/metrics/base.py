@@ -26,3 +26,46 @@ class Metric(ABC):
 
     def compute(self, graph: Graph, params: RunParams) -> MetricResult:
         pass
+
+class AbsoluteMetric(ABC):
+    INFO: MetricInfo
+
+    @abstractmethod
+    def compute(self, graph: Graph, params: RunParams) -> MetricResult:
+        pass
+
+class RelativeMetric(ABC):
+    INFO: MetricInfo
+
+    @abstractmethod
+    def compute(self, G: Graph, H: Graph, params: RunParams) -> MetricResult:
+        pass
+
+class DeltaMetric(ABC):
+    '''
+    takes any AbsoluteMetric and automatically converts it into a RelativeMetric
+    that calculates the delta between the original and sparsified graph
+    '''
+
+    def __init__(self, base_metric: AbsoluteMetric):
+        self.base_metric = base_metric
+        self.INFO = MetricInfo(
+            name=f"{base_metric.INFO.name} delta",
+            description=f"calculates the change in {base_metric.INFO.name}",
+        )
+
+    def compute(self, G: Graph, H: Graph, params: RunParams) -> MetricResult:
+        G_result = self.base_metric.compute(G, params).summary
+        H_result = self.base_metric.compute(H, params).summary
+
+        delta_summary = {}
+        for key in G_result.keys():
+            if isinstance(G_result[key], (int, float)) and isinstance(H_result[key], (int, float)):
+                delta_summary[f"{key}_original"] = G_result[key]
+                delta_summary[f"{key}_reduced"] = H_result[key]
+                delta_summary[f"{key}_delta"] = H_result[key] - G_result[key]
+
+        return MetricResult(
+            metric=self.INFO.name,
+            summary=delta_summary
+        )
