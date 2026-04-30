@@ -11,6 +11,7 @@ class ExperimentDTO:
     a container to move experiment data from the service layer to cli/ui without exposing domain entities
     """
     graph_name: str
+    reduced_graph_key: str
     nodes_before: int
     edges_before: int
     nodes_after: int

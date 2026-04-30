@@ -79,7 +79,7 @@ class ExperimentService:
     def run_transform(
         self,
         graph_key: str,
-        tranform_name: str,
+        transform_name: str,
         params: Dict[str, Any],
     ) -> Graph:
         """
@@ -88,7 +88,7 @@ class ExperimentService:
         TransformRegistry.discover()
 
         G = self.get_graph(graph_key)
-        transform = TransformRegistry.get(tranform_name)
+        transform = TransformRegistry.get(transform_name)
         return transform.execute(G, RunParams(params))
 
 
@@ -145,19 +145,19 @@ class ExperimentService:
 
             # 2. polymorphic execution
             if algorithm_name in SparsifierRegistry.list():
-                H = self.run_sparsifier(graph_key, algorithm_name, run_params)
+                h = self.run_sparsifier(graph_key, algorithm_name, run_params)
             elif algorithm_name in TransformRegistry.list():
-                H = self.run_transform(graph_key, algorithm_name, run_params)
+                h = self.run_transform(graph_key, algorithm_name, run_params)
             else:
                 all_algos = sorted(SparsifierRegistry.list() + TransformRegistry.list())
                 raise KeyError(f"algorithm '{algorithm_name}' not found. available: {all_algos}")
 
             transform_time = time.perf_counter() - start
-            if isinstance(H.metadata, dict):
-                H.metadata['execution_time'] = transform_time
+            if isinstance(h.metadata, dict):
+                h.metadata['execution_time'] = transform_time
 
             # 3. compute metrics
-            metric_results = self.compute_metrics(H, metric_names)
+            metric_results = self.compute_metrics(h, metric_names)
 
             # 4. create experiment entity (domain object)
             experiment = Experiment()
@@ -167,7 +167,7 @@ class ExperimentService:
             experiment.finish()
 
             # 5. register new objects
-            uow.register_new_graph(H)
+            uow.register_new_graph(h)
             uow.register_new_experiment(experiment)
 
             # context manager __exit__ should call uow.commit() automatically here (?)
@@ -177,12 +177,13 @@ class ExperimentService:
 
         return ExperimentDTO(
             graph_name=graph_key,
+            reduced_graph_key=h.name,
             nodes_before=original_graph.node_count,
             edges_before=original_graph.edge_count,
-            nodes_after=H.node_count,
-            edges_after=H.edge_count,
+            nodes_after=h.node_count,
+            edges_after=h.edge_count,
             algorithm_name=algorithm_name,
             metric_results=metric_results,
-            metadata=H.metadata
+            metadata=h.metadata
         )
 
