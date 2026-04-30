@@ -9,9 +9,9 @@ the core goal of this framework is to become a tool for the systematic study of 
 
 ### general functionalities
 
-* __multi-source graph ingestion__: loading graphs from various formats (edgelists, memory objects) via a unified gateway. additionally, the framework uses lazy loading to boost performance while handling massive datasets
+* __multi-source graph ingestion__: loading graphs from various formats (edgelists, memory objects) via a unified gateway. additionally, the framework uses lazy loading to boost performance while handling large datasets
 * __polymorphic transformations__: support for different types of graph reduction
-  - __sparsification__ - selection of significant nodes/edges and discarding others
+  - __sparsification__ - selection of the most significant nodes/edges and discarding others
   - __coarsening__ - aggregation of similar nodes/edges to construct a smaller graph
   - __condensation (work in progress)__ - learning a synthetic graph from scratch
 * __automated metric registry__: calculating structural properties in the original and modified graph on the fly 
@@ -20,12 +20,12 @@ the core goal of this framework is to become a tool for the systematic study of 
 * __visualization__: basic metric value plots and graph figures
 
 ### system architecture
-the framework is built using domain-driven design principles and organized into distinct layers to ensure that experimental logic remains decoupled from infrastructure concerns. the plugin-driven architecture ensures flexibility and makes the program open for future extension.
+the framework is built using domain-driven design principles and organized into distinct layers to ensure that experimental logic remains decoupled from infrastructure concerns. the plugin-forward architecture is highly adaptable and makes the program open for future extension.
 
-- `domain` layer contains the core truth of the system, such as the `Graph` model, `Metric` definitions, and the abstract `GraphTransform` logic; it is purely focused on graph theory and the mathematics behind the graph algorithms
-- `application` layer orchestrates the workflow via the `ExperimentService`, handling the "business logic" of running a research job without needing to know how graphs are stored and where they come from
-- `infrastructure` layer takes care of details like reading graphs (`GraphGateway`), persisting results (`Repository`), and managing database transactions (`UnitofWork`)
-- `interface` layer provides entry points for the user including a CLI for automated batches and an API for potential integration with web dashboards
+- `src/domain/` layer contains the core truth of the system, such as the `Graph` model, `Metric` definitions, and the abstract `GraphTransform` logic; it is purely focused on graph theory and the mathematics behind the graph algorithms
+- `src/application/` layer orchestrates the workflow via the `ExperimentService`, handling the "business logic" of running a research job without needing to know how graphs are stored and where they come from
+- `src/infrastructure/` layer takes care of details like reading graphs (`GraphGateway`), persisting results (`Repository`), and managing database transactions (`UnitOfWork`)
+- `src/interface/` layer provides entry points for the user including a CLI for automated batches and an API for potential integration with web dashboards
 
 ### the pipeline
 the program follows a defined lifecycle for every experiment.
@@ -33,7 +33,7 @@ the program follows a defined lifecycle for every experiment.
 2. __orchestration__: the `ExperimentService` receives a command via a CLI/API and fetches the original graph from the `Repository`
 3. __transformation__: the system looks up the requested algorithm in a `Registry` and executes it, producing a new `Graph` object while keeping the original graph intact
 4. __analysis__: a series of `Metrics` is run against the graph and return detailed dictionaries of values and metadata from the calculation
-5. __commitment__: the `UnitofWork` ensures that both the new graph and the experiment results are saved to storage simultaneously, preventing dirty data resulting from errors
+5. __commitment__: the `UnitOfWork` ensures that both the new graph and the experiment results are saved to storage simultaneously, preventing dirty data resulting from errors
 
 ## quick start
 
