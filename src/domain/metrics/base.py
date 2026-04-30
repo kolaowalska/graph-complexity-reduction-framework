@@ -30,18 +30,22 @@ class Metric(ABC):
 
 
 class RelativeMetric(ABC):
+    """
+    for metrics that are inherently two-graph. use DeltaMetric instead
+    if you just want before and after deltas for a specific Metric.
+    """
     INFO: MetricInfo
 
     @abstractmethod
-    def compute(self, G: Graph, H: Graph, params: RunParams) -> MetricResult:
+    def compute(self, g: Graph, h: Graph, params: RunParams) -> MetricResult:
         pass
 
 class DeltaMetric(Metric):
     """
     decorator that wraps any Metric and computes the delta
-    between the original and reduced graph
+    between the original and reduced graph. satisfies the Metric
+    interface so it can be used anywhere a Metric is expected.
     """
-    INFO: MetricInfo
 
     def __init__(self, base_metric: Metric):
         self.base_metric = base_metric
@@ -63,15 +67,17 @@ class DeltaMetric(Metric):
         g_summary = self.base_metric.compute(g, params).summary
         h_summary = self.base_metric.compute(h, params).summary
 
-        delta_summary = {}
+        delta_summary: dict[str, float | int | str] = {}
         for key in g_summary.keys():
             g_val = g_summary[key]
-            h_val = h_summary[key]
+            h_val = h_summary.get(key)
 
             if isinstance(g_val, (int, float)) and isinstance(h_val, (int, float)):
                 delta_summary[f"{key}_original"] = g_val
                 delta_summary[f"{key}_reduced"] = h_val
                 delta_summary[f"{key}_delta"] = h_val - g_val
+            else:
+                delta_summary[key] = g_val
 
         return MetricResult(
             metric=self.INFO.name,

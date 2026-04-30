@@ -14,20 +14,18 @@ class AvgPathLength(Metric):
     )
 
     def compute(self, graph: Graph, params: RunParams) -> MetricResult:
-        G = graph.to_networkx(copy=False)
+        g = graph.to_networkx(copy=False)
         weight_arg = "weight" if graph.is_weighted() else None
 
-        UG = G.to_undirected() if G.is_directed() else G
+        g_undirected = g.to_undirected() if g.is_directed() else g
 
-        if UG.number_of_nodes() <= 1:
+        if g_undirected.number_of_nodes() <= 1:
             val = 0.0
+        elif nx.is_connected(g_undirected):
+            val = nx.average_shortest_path_length(g_undirected, weight=weight_arg)
         else:
-            if nx.is_connected(UG):
-                subgraph = UG
-            else:
-                largest_cc = max(nx.connected_components(UG), key=len)
-                subgraph = UG.subgraph(largest_cc)
-
+            largest_cc = max(nx.connected_components(g_undirected), key=len)
+            subgraph = g_undirected.subgraph(largest_cc)
             try:
                 val = nx.average_shortest_path_length(subgraph, weight=weight_arg)
             except Exception:

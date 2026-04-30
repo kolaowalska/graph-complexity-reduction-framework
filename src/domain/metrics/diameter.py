@@ -6,7 +6,7 @@ from src.domain.graph_model import Graph, RunParams
 from src.domain.metrics.base import Metric, MetricInfo, MetricResult
 from src.domain.metrics.registry import register_metric
 
-# TODO: decide whether diameter should be inf or the diameter of the largest connected component
+
 @register_metric("diameter")
 class Diameter(Metric):
     INFO = MetricInfo(
@@ -16,26 +16,23 @@ class Diameter(Metric):
     )
 
     def compute(self, graph: Graph, params: RunParams) -> MetricResult:
-        G = graph.to_networkx(copy=False)
-        UG = G.to_undirected() if G.is_directed() else G
+        g = graph.to_networkx(copy=False)
+        g_undirected = g.to_undirected() if g.is_directed() else g
 
-        component_size = 0
-        if UG.number_of_nodes() == 0:
-            val = 0.0
-        elif nx.is_connected(UG):
-            val = float(nx.diameter(UG))
-            component_size = UG.number_of_nodes()
+        if g_undirected.number_of_nodes() == 0:
+            return MetricResult(metric=self.INFO.name, summary={"diameter": 0.0})
+
+        if nx.is_connected(g_undirected):
+            subgraph = g_undirected
         else:
-            largest_cc = max(nx.connected_components(UG), key=len)
-            subgraph = UG.subgraph(largest_cc)
-            val = float(nx.diameter(subgraph))
-            component_size = len(largest_cc)
+            largest_cc = max(nx.connected_components(g_undirected), key=len)
+            subgraph = g_undirected.subgraph(largest_cc)
 
         return MetricResult(
             metric=self.INFO.name,
             summary={
-                "diameter": val,
-                # "component_nodes": component_size,
-                # "total_nodes": UG.number_of_nodes()
-            }
+                "diameter": float(nx.diameter(subgraph)),
+                "component_nodes": subgraph.number_of_nodes(),
+                "total_nodes": g_undirected.number_of_nodes(),
+            },
         )
