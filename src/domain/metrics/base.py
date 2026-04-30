@@ -24,15 +24,10 @@ class MetricResult:
 class Metric(ABC):
     INFO: MetricInfo
 
-    def compute(self, graph: Graph, params: RunParams) -> MetricResult:
-        pass
-
-class AbsoluteMetric(ABC):
-    INFO: MetricInfo
-
     @abstractmethod
     def compute(self, graph: Graph, params: RunParams) -> MetricResult:
         pass
+
 
 class RelativeMetric(ABC):
     INFO: MetricInfo
@@ -42,28 +37,40 @@ class RelativeMetric(ABC):
         pass
 
 class DeltaMetric(ABC):
-    '''
-    takes any AbsoluteMetric and automatically converts it into a RelativeMetric
-    that calculates the delta between the original and sparsified graph
-    '''
+    """
+    decorator that wraps any Metric and computes the delta
+    between the original and reduced graph
+    """
 
-    def __init__(self, base_metric: AbsoluteMetric):
+    def __init__(self, base_metric: Metric):
         self.base_metric = base_metric
         self.INFO = MetricInfo(
-            name=f"{base_metric.INFO.name} delta",
+            name=f"{base_metric.INFO.name}_delta",
             description=f"calculates the change in {base_metric.INFO.name}",
         )
 
+    def compute(self, graph: Graph, params: RunParams) -> MetricResult:
+        """
+        single-graph call - delegates to the wrapped metric
+        """
+        return self.base_metric.compute(graph, params)
+
     def compute(self, G: Graph, H: Graph, params: RunParams) -> MetricResult:
-        G_result = self.base_metric.compute(G, params).summary
-        H_result = self.base_metric.compute(H, params).summary
+        """
+        two-graph call - computes the before and after diff
+        """
+        g_summary = self.base_metric.compute(G, params).summary
+        h_summary = self.base_metric.compute(H, params).summary
 
         delta_summary = {}
-        for key in G_result.keys():
-            if isinstance(G_result[key], (int, float)) and isinstance(H_result[key], (int, float)):
-                delta_summary[f"{key}_original"] = G_result[key]
-                delta_summary[f"{key}_reduced"] = H_result[key]
-                delta_summary[f"{key}_delta"] = H_result[key] - G_result[key]
+        for key in g_summary.keys():
+            g_val = g_summary[key]
+            h_val = h_summary[key]
+
+            if isinstance(g_val, (int, float)) and isinstance(h_val, (int, float)):
+                delta_summary[f"{key}_original"] = g_val
+                delta_summary[f"{key}_reduced"] = h_val
+                delta_summary[f"{key}_delta"] = h_val - g_val
 
         return MetricResult(
             metric=self.INFO.name,
