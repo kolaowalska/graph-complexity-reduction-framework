@@ -36,17 +36,18 @@ class RelativeMetric(ABC):
     def compute(self, G: Graph, H: Graph, params: RunParams) -> MetricResult:
         pass
 
-class DeltaMetric(ABC):
+class DeltaMetric(Metric):
     """
     decorator that wraps any Metric and computes the delta
     between the original and reduced graph
     """
+    INFO: MetricInfo
 
     def __init__(self, base_metric: Metric):
         self.base_metric = base_metric
         self.INFO = MetricInfo(
             name=f"{base_metric.INFO.name}_delta",
-            description=f"calculates the change in {base_metric.INFO.name}",
+            description=f"delta of {base_metric.INFO.name} between two graphs",
         )
 
     def compute(self, graph: Graph, params: RunParams) -> MetricResult:
@@ -55,12 +56,12 @@ class DeltaMetric(ABC):
         """
         return self.base_metric.compute(graph, params)
 
-    def compute(self, G: Graph, H: Graph, params: RunParams) -> MetricResult:
+    def compute_delta(self, g: Graph, h: Graph, params: RunParams) -> MetricResult:
         """
         two-graph call - computes the before and after diff
         """
-        g_summary = self.base_metric.compute(G, params).summary
-        h_summary = self.base_metric.compute(H, params).summary
+        g_summary = self.base_metric.compute(g, params).summary
+        h_summary = self.base_metric.compute(h, params).summary
 
         delta_summary = {}
         for key in g_summary.keys():
