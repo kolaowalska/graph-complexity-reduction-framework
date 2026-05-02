@@ -47,6 +47,11 @@ SCENARIOS = [
         "algorithm": "mock_coarsening",
         "params": {"reduction_ratio": 0.5},
     },
+{
+        "label": "merw Sparsifier (rho=0.5)",
+        "algorithm": "merw",
+        "params": {"rho": 0.5},
+    },
 ]
 
 # -------------------------------------------------------------------------
