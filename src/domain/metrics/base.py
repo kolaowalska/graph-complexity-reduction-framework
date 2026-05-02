@@ -50,7 +50,7 @@ class DeltaMetric(Metric):
     def __init__(self, base_metric: Metric):
         self.base_metric = base_metric
         self.INFO = MetricInfo(
-            name=f"{base_metric.INFO.name}_delta",
+            name=f"{base_metric.INFO.name} delta",
             description=f"delta of {base_metric.INFO.name} between two graphs",
         )
 
