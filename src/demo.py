@@ -25,6 +25,8 @@ METRICS = [
     "avg_path_length",
     "degree_distribution",
     "connectivity",
+    "clustering",
+    "community_preservation",
 ]
 
 SCENARIOS = [
@@ -49,7 +51,7 @@ SCENARIOS = [
         "params": {"reduction_ratio": 0.5},
     },
 {
-        "label": "merw Sparsifier (rho=0.5)",
+        "label": "merw sparsifier (rho=0.5)",
         "algorithm": "merw",
         "params": {"rho": 0.5},
     },
