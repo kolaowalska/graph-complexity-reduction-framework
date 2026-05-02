@@ -24,6 +24,7 @@ METRICS = [
     "diameter",
     "avg_path_length",
     "degree_distribution",
+    "connectivity",
 ]
 
 SCENARIOS = [
