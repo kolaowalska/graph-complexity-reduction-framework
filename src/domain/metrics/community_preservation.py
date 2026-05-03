@@ -9,6 +9,7 @@ from src.domain.metrics.registry import register_metric
 class CommunityPreservation(Metric):
     INFO = MetricInfo(
         name="community preservation",
+        type="absolute",
         description=(
             "modularity and number of communities detected by the louvain method."
             "use with DeltaMetric to check whether sparsification fractures communities"

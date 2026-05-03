@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Mapping
+from typing import Mapping, Literal
 
 from src.domain.graph_model import Graph, RunParams, ArtifactHandle
 
@@ -10,6 +10,7 @@ from src.domain.graph_model import Graph, RunParams, ArtifactHandle
 @dataclass(frozen=True)
 class MetricInfo:
     name: str
+    type: Literal["absolute", "relative"] = "absolute"
     version: str = "0.1.0"
     description: str = ""
 
@@ -51,6 +52,7 @@ class DeltaMetric(Metric):
         self.base_metric = base_metric
         self.INFO = MetricInfo(
             name=f"{base_metric.INFO.name} delta",
+            type="absolute",
             description=f"delta of {base_metric.INFO.name} between two graphs",
         )
 

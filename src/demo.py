@@ -29,6 +29,10 @@ METRICS = [
     "community_preservation",
 ]
 
+RELATIVE_METRICS = [
+    "spectral_similarity"
+]
+
 SCENARIOS = [
     {
         "label": "random sparsifier (p=0.3)",
@@ -128,14 +132,16 @@ def _compute_deltas(
     run_params = RunParams(values=params)
 
     print(f" • deltas:")
-    for name in METRICS:
+    for name in METRICS + RELATIVE_METRICS:
         try:
-            base = MetricRegistry.get(name)
-            delta = DeltaMetric(base)
-            result = delta.compute_delta(G, H, run_params)
+            metric = MetricRegistry.get(name)
+            if metric.INFO.type == "relative":
+                result = metric.compute(G, H, run_params)
+            else:
+                result = DeltaMetric(metric).compute_delta(G, H, run_params)
             print(f"    - {result.metric}: {_format_summary(result.summary)}")
         except Exception as e:
-            print(f"    - {name} delta: error ({e})")
+            print(f"    - {name}: error ({e})")
 
 
 def _run_visualizations(api: ExperimentFacade, graph_key: str):
@@ -147,6 +153,7 @@ def _run_visualizations(api: ExperimentFacade, graph_key: str):
         "neighbor": "k_neighbor",
         "degree": "local_degree",
         "coarsen": "coarsening",
+        "merw": "merw",
     }
 
     for name in repo.list_names():

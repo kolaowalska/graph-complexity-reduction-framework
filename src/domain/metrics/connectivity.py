@@ -10,6 +10,7 @@ from src.domain.metrics.registry import register_metric
 class Connectivity(Metric):
     INFO = MetricInfo(
         name="connectivity",
+        type="absolute",
         description=("structural connectivity profile:"
                     "number of connected components, "
                     "size of the largest component as a fraction of total nodes, "

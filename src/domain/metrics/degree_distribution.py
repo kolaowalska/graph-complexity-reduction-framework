@@ -11,6 +11,7 @@ from src.domain.metrics.registry import register_metric
 class APSPMetric(Metric):
     INFO = MetricInfo(
         name="degree distribution",
+        type="absolute",
         description="probability distribution of vertex degrees"
     )
 

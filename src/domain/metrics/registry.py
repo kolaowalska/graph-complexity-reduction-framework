@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Callable, Dict, Type
 
-from .base import Metric
+from .base import Metric, RelativeMetric
 from src.domain.common.plugin_discovery import discover_modules
 
 _METRICS: Dict[str, Type[Metric]] = {}
@@ -11,7 +11,7 @@ _DISCOVERED = False
 
 class MetricRegistry:
     @staticmethod
-    def register(name: str) -> Callable[[Type[Metric]], Type[Metric]]:
+    def register(name: str) -> Callable[[Type[Metric | RelativeMetric]], Type[Metric | RelativeMetric]]:
         if not isinstance(name, str) or not name.strip():
             raise ValueError("metric name must be a non-empty string!!")
         key = name.strip()
@@ -38,7 +38,7 @@ class MetricRegistry:
             MetricRegistry.discover()
 
     @staticmethod
-    def get(name: str) -> Metric:
+    def get(name: str) -> Metric | RelativeMetric:
         MetricRegistry.ensure_discovered()
         key = name.strip()
         try:

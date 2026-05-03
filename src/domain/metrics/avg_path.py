@@ -10,6 +10,7 @@ from src.domain.metrics.registry import register_metric
 class AvgPathLength(Metric):
     INFO = MetricInfo(
         name="average path length",
+        type="absolute",
         description="average shortest path length on largest connected component",
     )
 

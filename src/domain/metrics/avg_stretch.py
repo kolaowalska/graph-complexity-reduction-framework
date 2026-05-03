@@ -9,6 +9,7 @@ from src.domain.metrics.registry import register_metric
 class AvgStretch(Metric):
     INFO = MetricInfo(
         name="average stretch",
+        type="absolute",
         description="todo"
     )
 

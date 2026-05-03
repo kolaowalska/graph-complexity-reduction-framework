@@ -8,6 +8,7 @@ from src.domain.metrics.registry import register_metric
 class APSPMetric(Metric):
     INFO = MetricInfo(
         name="all pairs shortest paths",
+        type="absolute",
         description="todo"
     )
 

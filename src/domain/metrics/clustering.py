@@ -11,6 +11,7 @@ from src.domain.metrics.registry import register_metric
 class Clustering(Metric):
     INFO = MetricInfo(
         name="clustering",
+        type="absolute",
         description=(
             "average clustering coefficient and transitivity; measures local triangle density"
         ),
