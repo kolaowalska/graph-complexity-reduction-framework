@@ -3,6 +3,7 @@ import networkx as nx
 import numpy as np
 import math
 
+from domain.transforms.base import TransformInfo
 from src.domain.graph_model import Graph, RunParams
 from src.domain.sparsifiers.base import Sparsifier
 from src.domain.sparsifiers.registry import register_sparsifier
@@ -10,6 +11,8 @@ from src.domain.sparsifiers.registry import register_sparsifier
 
 @register_sparsifier("k_neighbor")
 class KNeighborSparsifier(Sparsifier):
+    INFO = TransformInfo(name="k-neighbor sparsifier", abbrev="k-n")
+
     def run(self, graph: Graph, params: RunParams) -> Graph:
         rho = params.get("rho", 0.5) # TODO: outsource pruning parameter
         seed = params.get("seed", 420)

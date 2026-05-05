@@ -1,19 +1,20 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 import time
 import logging
-from typing import Any, Dict
 
 from src.domain.graph_model import Graph, RunParams, OperationDescriptor
 
 
+@dataclass
 class TransformInfo:
     """
     metadata for a GraphTransform plugin
-    similar to SparsifierInfo, but for generic graph-to-graph operations hopefully in the future
     """
     name: str
+    abbrev: str
     version: str = "1.0.0"
     supports_directed: bool = True
     supports_weighted: bool = True
@@ -25,13 +26,9 @@ class TransformInfo:
 
 
 class GraphTransform(ABC):
-    """
-    [LAYER SUPERTYPE] base class implementing behavior common to all graph transformations
-    """
+    INFO: TransformInfo
+
     def execute(self, graph: Graph, params: RunParams) -> Graph:
-        """
-        [TEMPLATE METHOD] the public entry point to handle the boilerplate
-        """
         if graph.node_count == 0:
             logging.warning(f"[{self.__class__.__name__}] no nodes found")
 
@@ -50,7 +47,4 @@ class GraphTransform(ABC):
 
     @abstractmethod
     def run(self, graph: Graph, params: RunParams) -> Graph:
-        """
-        [UNIFIED COMMAND INTERFACE] the specific logic that subclasses should implement
-        """
         pass

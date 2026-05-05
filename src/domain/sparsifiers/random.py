@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 import networkx as nx
 
+from domain.transforms.base import TransformInfo
 from src.domain.graph_model import Graph, RunParams
 from src.domain.sparsifiers.base import Sparsifier
 from src.domain.sparsifiers.registry import register_sparsifier
@@ -10,6 +11,8 @@ from src.domain.sparsifiers.registry import register_sparsifier
 
 @register_sparsifier("random")
 class RandomSparsifier(Sparsifier):
+    INFO = TransformInfo(name="random sparsifier", abbrev="rndm")
+
     def run(self, graph: Graph, params: RunParams) -> Graph:
         p = params.get("p", 0.5)
         seed = params.get("seed", 420)

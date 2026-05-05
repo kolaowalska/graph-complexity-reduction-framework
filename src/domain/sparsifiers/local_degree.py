@@ -2,6 +2,7 @@ from __future__ import annotations
 import networkx as nx
 import math
 
+from domain.transforms.base import TransformInfo
 from src.domain.graph_model import Graph, RunParams
 from src.domain.sparsifiers.base import Sparsifier
 from src.domain.sparsifiers.registry import register_sparsifier
@@ -9,6 +10,8 @@ from src.domain.sparsifiers.registry import register_sparsifier
 
 @register_sparsifier("local_degree")
 class LocalDegreeSparsifier(Sparsifier):
+    INFO = TransformInfo(name="local degree sparsifier", abbrev="ld")
+
     def run(self, graph: Graph, params: RunParams) -> Graph:
         rho = params.get("rho", 0.5)
 

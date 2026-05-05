@@ -2,13 +2,15 @@ from __future__ import annotations
 import networkx as nx
 import random
 
-from src.domain.transforms.base import GraphTransform
+from src.domain.transforms.base import GraphTransform, TransformInfo
 from src.domain.transforms.registry import register_transform
 from src.domain.graph_model import Graph, RunParams
 
 
 @register_transform("mock_coarsening")
 class MockCoarsening(GraphTransform):
+    INFO = TransformInfo(name="coarsening for the layman", abbrev="coarsening")
+
     def run(self, graph: Graph, params: RunParams) -> Graph:
         G = graph.to_networkx(copy=True)
 

@@ -10,14 +10,14 @@ ROW_LABEL_WIDTH = 32
 
 # ── name abbreviations ────────────────────────────────────────────────────────
 
-_ALGO_ABBREV = {
-    "random":           "random",
-    "k_neighbor":       "k-nbr",
-    "local_degree":     "loc-deg",
-    "mock_coarsening":  "coarsen",
-    "merw":             "merw-v",
-    "merw_edge":        "merw-e",
-}
+# _ALGO_ABBREV = {
+#     "random":           "random",
+#     "k_neighbor":       "k-nbr",
+#     "local_degree":     "loc-deg",
+#     "mock_coarsening":  "coarsen",
+#     "merw":             "merw-v",
+#     "merw_edge":        "merw-e",
+# }
 
 _METRIC_ABBREV = {
     "diameter":                 "diameter",
@@ -104,16 +104,21 @@ _KEY_ABBREV = {
 }
 
 
-def _abbrev_algo(label: str) -> str:
-    """shorten a scenario label to fit in a column header"""
-    for key, short in _ALGO_ABBREV.items():
-        if key in label:
-            import re
-            match = re.search(r"\((.*?)\)", label)
-            # hint = match.group(1).replace("rho=", "ρ=").replace("p=", "p=") if match else ""
-            # return f"{short} {hint}".strip()
-            return f"{short}".strip()
-    return label[:COL_WIDTH - 1]
+def _abbrev_algo(label: str, algorithm: str, registry_get) -> str:
+    """
+    Try to get the abbrev from the sparsifier's INFO.
+    Falls back to the label string if the registry call fails.
+    """
+    try:
+        transform = registry_get(algorithm)
+        abbrev = transform.INFO.abbrev
+        # import re
+        # match = re.search(r"\((.*?)\)", label)
+        # hint = match.group(1).replace("rho=", "ρ=") if match else ""
+        # return f"{abbrev} {hint}".strip()
+        return f"{abbrev}".strip()
+    except Exception:
+        return label[:COL_WIDTH - 1]
 
 
 def _abbrev_row(metric_name: str, key: str) -> str:
@@ -158,20 +163,34 @@ class Reporter:
         self.records.append(record)
 
     def print_report(self) -> None:
-        if not self.records:
-            print("no results to report")
-            return
+        from src.domain.sparsifiers.registry import SparsifierRegistry
+        from src.domain.transforms.registry import TransformRegistry
 
+        def resolve(label: str, algo: str) -> str:
+            for registry in (SparsifierRegistry, TransformRegistry):
+                try:
+                    transform = registry.get(algo)
+                    abbrev = transform.INFO.abbrev
+                    # import re
+                    # match = re.search(r"\((.*?)\)", label)
+                    # hint = match.group(1).replace("rho=", "ρ=") if match else ""
+                    # return f"{abbrev} {hint}".strip()
+                    return f"{abbrev}".strip()
+                except Exception:
+                    continue
+            return label[:COL_WIDTH - 1]
+
+        columns = [(r.label, r.algorithm) for r in self.records]
         _print_header("EXPERIMENT REPORT")
-        _print_topology_table(self.records)
-        _print_metrics_table(self.records)
-        _print_deltas_table(self.records)
+        _print_topology_table(self.records, columns, resolve)
+        _print_metrics_table(self.records, columns, resolve)
+        _print_deltas_table(self.records, columns, resolve)
 
 
 # ── table helpers ─────────────────────────────────────────────────────────────
 
 def _print_header(title: str) -> None:
-    width = 100
+    width = 135
     print()
     print(_c("═" * width, _CYAN))
     print(_c(f"  {title}", _BOLD, _CYAN))
@@ -181,7 +200,7 @@ def _print_header(title: str) -> None:
 def _print_section(title: str) -> None:
     print()
     print(_c(f"  {title}", _BOLD, _WHITE))
-    print(_c("  " + "─" * 76, _DIM))
+    print(_c("  " + "─" * 132, _DIM))
 
 
 def _fmt(v: Any, is_delta: bool = False) -> str:
@@ -214,7 +233,7 @@ def _print_table(
 
     header = _c(f"  {'metric':<{row_w}}", _DIM)
     for col in columns:
-        label = _abbrev_algo(col)[:col_w - 1]
+        label = col[:col_w - 1]
         header += _c(f"{label:>{col_w}}", _BOLD)
     print(header)
     print(_c("  " + "─" * (row_w + col_w * len(columns)), _DIM))
@@ -234,59 +253,55 @@ def _strip_ansi(s: str) -> str:
 
 # ── topology table ────────────────────────────────────────────────────────────
 
-def _print_topology_table(records: list[ScenarioRecord]) -> None:
+def _print_topology_table(
+    records: list[ScenarioRecord],
+    columns: list[tuple[str, str]],
+    resolve: callable,
+) -> None:
     _print_section("TOPOLOGY")
-
-    columns = [r.label for r in records]
-    rows    = ["nodes before", "nodes after", "Δ nodes",
-               "edges before", "edges after", "Δ edges", "edge retention"]
-
+    col_headers = [resolve(label, algo) for label, algo in columns]
+    rows = ["nodes before", "nodes after", "Δ nodes",
+            "edges before", "edges after", "Δ edges", "edge retention"]
     cells = []
     for row in rows:
         row_cells = []
         for r in records:
-            if row == "nodes before":
-                row_cells.append(_fmt(r.nodes_before))
-            elif row == "nodes after":
-                row_cells.append(_fmt(r.nodes_after))
-            elif row == "Δ nodes":
-                row_cells.append(_fmt(r.nodes_after - r.nodes_before, is_delta=True))
-            elif row == "edges before":
-                row_cells.append(_fmt(r.edges_before))
-            elif row == "edges after":
-                row_cells.append(_fmt(r.edges_after))
-            elif row == "Δ edges":
-                row_cells.append(_fmt(r.edges_after - r.edges_before, is_delta=True))
+            if row == "nodes before": row_cells.append(_fmt(r.nodes_before))
+            elif row == "nodes after": row_cells.append(_fmt(r.nodes_after))
+            elif row == "Δ nodes": row_cells.append(_fmt(r.nodes_after - r.nodes_before, is_delta=True))
+            elif row == "edges before": row_cells.append(_fmt(r.edges_before))
+            elif row == "edges after": row_cells.append(_fmt(r.edges_after))
+            elif row == "Δ edges": row_cells.append(_fmt(r.edges_after - r.edges_before, is_delta=True))
             elif row == "edge retention":
                 ratio = r.edges_after / r.edges_before if r.edges_before > 0 else 0.0
                 row_cells.append(_fmt(ratio))
         cells.append(row_cells)
-
-    _print_table(rows, columns, cells)
+    _print_table(rows, col_headers, cells)
 
 
 # ── absolute metrics table ────────────────────────────────────────────────────
 
-def _print_metrics_table(records: list[ScenarioRecord]) -> None:
+def _print_metrics_table(
+    records: list[ScenarioRecord],
+    columns: list[tuple[str, str]],
+    resolve: callable,
+) -> None:
     _print_section("METRICS ON SPARSIFIED GRAPH (H)")
-
+    col_headers = [resolve(label, algo) for label, algo in columns]
     metric_keys: list[tuple[str, str]] = []
-    seen = set()
+    seen: set = set()
     for r in records:
         for metric_name, summary in r.metrics.items():
-            if metric_name in ("spectral_similarity",):
+            if metric_name in ("spectral_similarity", "spectral similarity"):
                 continue
-            for key, val in summary.items():
+            for key in summary:
                 if key == "execution_time":
                     continue
                 pair = (metric_name, key)
                 if pair not in seen:
                     metric_keys.append(pair)
                     seen.add(pair)
-
     rows = [_abbrev_row(m, k) for m, k in metric_keys]
-    columns = [r.label for r in records]
-
     cells = []
     for metric_name, key in metric_keys:
         row_cells = []
@@ -294,28 +309,28 @@ def _print_metrics_table(records: list[ScenarioRecord]) -> None:
             val = r.metrics.get(metric_name, {}).get(key, "—")
             row_cells.append(_fmt(val))
         cells.append(row_cells)
-
-    _print_table(rows, columns, cells)
+    _print_table(rows, col_headers, cells)
 
 
 # ── deltas table ──────────────────────────────────────────────────────────────
 
-def _print_deltas_table(records: list[ScenarioRecord]) -> None:
+def _print_deltas_table(
+    records: list[ScenarioRecord],
+    columns: list[tuple[str, str]],
+    resolve: callable,
+) -> None:
     _print_section(f"DELTAS (H vs G)  ·  {_c("green", _GREEN)} = increase  ·  {_c("red", _RED)} = decrease")
-
+    col_headers = [resolve(label, algo) for label, algo in columns]
     delta_keys: list[tuple[str, str]] = []
     seen: set = set()
     for r in records:
         for metric_name, summary in r.deltas.items():
-            for key, val in summary.items():
+            for key in summary:
                 pair = (metric_name, key)
                 if pair not in seen:
                     delta_keys.append(pair)
                     seen.add(pair)
-
     rows = [_abbrev_row(m, k) for m, k in delta_keys]
-    columns = [r.label for r in records]
-
     cells = []
     for metric_name, key in delta_keys:
         row_cells = []
@@ -326,5 +341,4 @@ def _print_deltas_table(records: list[ScenarioRecord]) -> None:
             )
             row_cells.append(_fmt(val, is_delta=is_delta))
         cells.append(row_cells)
-
-    _print_table(rows, columns, cells)
+    _print_table(rows, col_headers, cells)

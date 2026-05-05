@@ -19,7 +19,7 @@ the core goal of this framework is to become a tool for the systematic study of 
 * __efficiency benchmarking__: automatic tracking of wall-clock time for both transformation and metric phases to evaluate theoretical vs. empirical complexity
 * __visualization__: basic metric value plots and graph figures
 
-### system architecture
+### structure tour d'horizon
 the framework is built using domain-driven design principles and organized into distinct layers to ensure that experimental logic remains decoupled from infrastructure concerns. the plugin-forward architecture is highly adaptable and makes the program open for future extension.
 
 - `src/domain/` layer contains the core truth of the system, such as the `Graph` model, `Metric` definitions, and the abstract `GraphTransform` logic; it is purely focused on graph theory and the mathematics behind the graph algorithms
