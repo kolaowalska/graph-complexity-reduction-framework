@@ -10,8 +10,7 @@ from src.domain.graph_model import RunParams
 
 try:
     from src.interfaces.visualizer import save_comparison_plot
-    # VISUALIZE = True
-    VISUALIZE = False
+    VISUALIZE = True
 except ImportError:
     VISUALIZE = False
     print("visualizer not found :( plotting disabled")
