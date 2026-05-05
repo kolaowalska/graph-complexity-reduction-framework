@@ -36,12 +36,12 @@ SCENARIOS = [
     {
         "label": "random sparsifier (p=0.3)",
         "algorithm": "random",
-        "params": {"p": 0.3, "seed": 123},
+        "params": {"p": 0.3, "seed": 1312},
     },
     {
         "label": "k-neighbor sparsifier (rho=0.5)",
         "algorithm": "k_neighbor",
-        "params": {"rho": 0.5, "seed": 42},
+        "params": {"rho": 0.5, "seed": 420},
     },
     {
         "label": "local degree sparsifier (rho=0.5)",
@@ -53,10 +53,10 @@ SCENARIOS = [
         "algorithm": "mock_coarsening",
         "params": {"reduction_ratio": 0.5},
     },
-{
+    {
         "label": "merw sparsifier (rho=0.5)",
         "algorithm": "merw",
-        "params": {"rho": 0.5},
+        "params": {"rho": 0.5, "rescore_interval": 0},
     },
 ]
 

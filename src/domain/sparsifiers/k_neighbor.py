@@ -59,6 +59,6 @@ class KNeighborSparsifier(Sparsifier):
 
         return Graph.from_networkx(
             H,
-            name=f"{graph.name}_k_neighbor_{rho}",
+            name=f"{graph.name}_k_neighbor",
             metadata={"rho": rho, "algorithm": "k_neighbor"}
         )

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 import scipy.sparse.linalg as sla
 import networkx as nx
@@ -16,18 +14,15 @@ def _dominant_eigenvector(A, n: int) -> np.ndarray:
     returns the dominant eigenvector of an adjacency matrix.
     """
     if n < 500:
-        dense = A.toarray()
-        eigenvalues, eigenvectors = np.linalg.eigh(dense)
+        _, eigenvectors = np.linalg.eigh(A.toarray())
         v = np.abs(eigenvectors[:, -1])
     else:
         try:
             _, eigenvectors = sla.eigsh(A, k=1, which="LM", tol=1e-10, maxiter=n * 10)
             v = np.abs(eigenvectors[:, 0])
         except Exception:
-            dense = A.toarray()
-            _, eigenvectors = np.linalg.eigh(dense)
+            _, eigenvectors = np.linalg.eigh(A.toarray())
             v = np.abs(eigenvectors[:, -1])
-
     norm = np.linalg.norm(v)
     return v / norm if norm > 0 else v
 
@@ -39,34 +34,27 @@ def _stationary_distribution(psi: np.ndarray) -> np.ndarray:
     total = p.sum()
     return p / total if total > 0 else p
 
-def _impact_score(g: nx.Graph, baseline_distribution: np.ndarray, nodes: list) -> dict:
+def _score_edges(g: nx.Graph, baseline_distribution: np.ndarray, nodes: list) -> dict[tuple, float]:
     """
     leave-one-out impact score.
-    for each node v, removes the node and measures L1 distance from baseline distribution.
+    for each edge, the function temporarily removes the edge, recomputes the MERW
+    stationary distribution, and measures the L1 shift from baseline.
     """
-
-    node_index = {n: i for i, n in enumerate(nodes)}
     scores = {}
 
-    for v in nodes:
-        gv = g.copy()
-        gv.remove_node(v)
+    for u, v in g.edges():
+        g_temp = g.copy()
+        g_temp.remove_edge(u, v)
 
-        remaining = [n for n in nodes if n != v]
-
-        if len(remaining) == 0:
-            scores[v] = 0.0
+        if not nx.is_connected(g_temp):
+            scores[(u, v)] = float("inf")
             continue
 
-        Av = nx.to_scipy_sparse_array(gv, nodelist=remaining, dtype=float, format="csr")
-        psi_v = _dominant_eigenvector(Av, len(remaining))
-        Pv = _stationary_distribution(psi_v)
+        A_temp = nx.to_scipy_sparse_array(g_temp, nodelist=nodes, dtype=float, format="csr")
+        psi_temp = _dominant_eigenvector(A_temp, len(nodes))
+        P_temp = _stationary_distribution(psi_temp)
 
-        pad = np.zeros(len(nodes))
-        for i, n in enumerate(remaining):
-            pad[node_index[n]] = Pv[i]
-
-        scores[v] = float(np.sum(np.abs(baseline_distribution - pad)))
+        scores[(u, v)] = float(np.sum(np.abs(baseline_distribution - P_temp)))
 
     return scores
 
@@ -77,52 +65,67 @@ class MERWSparsifier(Sparsifier):
     TODO
     """
     def run(self, graph: Graph, params: RunParams) -> Graph:
-        rho = float(params.get("rho", 1.0))
+        rho = float(params.get("rho", 0.5))
+        rescore_interval = int(params.get("rescore_interval", 0))
 
         if not (0.0 < rho <= 1.0):
-            raise ValueError(f"rho must be in (0, 1.0], got {rho} instead")
+            raise ValueError(f"rho must be in (0, 1], got {rho}")
 
         g = graph.to_networkx(copy=True)
-        g_undirected = g.to_undirected() if g.is_directed() else g
+        ug = g.to_undirected() if g.is_directed() else g
 
-        if not nx.is_connected(g_undirected):
-            raise ValueError("merw sparsifier expects a connected graph")
+        if not nx.is_connected(ug):
+            raise ValueError(f"merw sparsifier expects a connected graph")
 
-        nodes = list(g_undirected.nodes())
-        edges = g_undirected.number_of_edges()
-        targets = int(np.floor(rho * edges))
+        nodes = list(ug.nodes())
+        target_edges = int(np.floor(rho * ug.number_of_edges()))
 
-        # phase 1: global baseline
-        A = nx.to_scipy_sparse_array(g_undirected, nodelist=nodes, dtype=float, format="csr")
+        # phase 1
+        A = nx.to_scipy_sparse_array(ug, nodelist=nodes, dtype=float, format="csr")
         psi = _dominant_eigenvector(A, len(nodes))
         baseline_distribution = _stationary_distribution(psi)
 
-        # phase 2: impact scoring
-        scores = _impact_score(g_undirected, baseline_distribution, nodes)
+        # phase 2
+        scores = _score_edges(ug, baseline_distribution, nodes)
 
-        # phase 3: bottom-up pruning
-        nodes_sorted = sorted(scores, key=lambda v: scores[v])
-        h = g_undirected.copy()
+        # phase 3
+        h = ug.copy()
         pruned = 0
-        for v in nodes_sorted:
-            if h.number_of_edges() <= targets:
+
+        while h.number_of_edges() > target_edges:
+            candidates = {
+                e: s for e, s in scores.items()
+                if h.has_edge(*e) and s < float("inf")
+            }
+            if not candidates:
+                print("[MERWSparsifier] no more prunable edges, stopping early")
                 break
 
+            u, v = min(candidates, key=lambda e: candidates[e])
+
+            # re-checking connectivity live; this edge may have become a bridge
             h_temp = h.copy()
-            h_temp.remove_node(v)
+            h_temp.remove_edge(u, v)
 
             if not nx.is_connected(h_temp):
+                scores[(u, v)] = float("inf") # marking as untouchable going forward
                 continue
 
-            h = h_temp
+            h.remove_edge(u, v)
+            del scores[(u, v)]
             pruned += 1
 
-            if h.number_of_edges() <= h.number_of_nodes() - 1:
-                break
+            if rescore_interval > 0 and pruned % rescore_interval == 0:
+                A_h = nx.to_scipy_sparse_array(h, nodelist=list(h.nodes()), dtype=float, format="csr")
+                psi_h = _dominant_eigenvector(A_h, h.number_of_nodes())
+                baseline_distribution_h = _stationary_distribution(psi_h)
+                scores = _score_edges(h, baseline_distribution_h, list(h.nodes()))
 
-        # re-attaching original edge attributes
         result = g.__class__()
-        result.add_nodes_from((n, g.nodes[n]) for n in h.nodes() if n in g.nodes())
+        result.add_nodes_from(
+            (n, g.nodes[n]) for n in h.nodes() if n in g.nodes()
+        )
+
         if g.is_directed():
             for u, v in h.edges():
                 if g.has_edge(u, v):
@@ -136,6 +139,6 @@ class MERWSparsifier(Sparsifier):
         return graph.from_networkx(
             result,
             name=f"{graph.name}_merw",
-            source=graph.source,
-            metadata={"rho": rho},
+            metadata={"rho": rho, "rescore_interval": rescore_interval},
         )
+

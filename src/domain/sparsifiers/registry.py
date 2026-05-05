@@ -29,7 +29,7 @@ class SparsifierRegistry:
     def discover() -> None:
         """
         imports all modules under graph_pipeline.domain.sparsifiers
-        each plugin module should (haha but does it??) self-register using @SparsifierRegistry.register("name")
+        each plugin module should self-register using @SparsifierRegistry.register("name").
         """
         global _DISCOVERED
         if _DISCOVERED:
