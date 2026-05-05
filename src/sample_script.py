@@ -4,14 +4,13 @@ import os
 sys.path.append(os.getcwd())
 
 from src.interfaces.api import ExperimentFacade
-from src.interfaces.reporter import Reporter, ScenarioRecord
 from src.domain.metrics.base import DeltaMetric
 from src.domain.metrics.registry import MetricRegistry
 from src.domain.graph_model import RunParams
 
 try:
     from src.interfaces.visualizer import save_comparison_plot
-    VISUALIZE = False
+    VISUALIZE = True
 except ImportError:
     VISUALIZE = False
     print("visualizer not found :( plotting disabled")
@@ -124,15 +123,14 @@ def _compute_deltas(
     graph_key: str,
     reduced_graph_key: str,
     params: dict,
-) -> dict[str, dict]:
+):
     """fetches both graphs and runs DeltaMetric for each registered metric."""
     repo = api.graph_repo
     G = repo.get(graph_key)
     H = repo.get(reduced_graph_key)
     run_params = RunParams(values=params)
 
-    results: dict[str, dict] = {}
-    # print(f" • deltas:")
+    print(f" • deltas:")
     for name in METRICS + RELATIVE_METRICS:
         try:
             metric = MetricRegistry.get(name)
@@ -140,12 +138,9 @@ def _compute_deltas(
                 result = metric.compute(G, H, run_params)
             else:
                 result = DeltaMetric(metric).compute_delta(G, H, run_params)
-            # print(f"    - {result.metric}: {_format_summary(result.summary)}")
-            results[result.metric] = dict(result.summary)  # ← collect
+            print(f"    - {result.metric}: {_format_summary(result.summary)}")
         except Exception as e:
             print(f"    - {name}: error ({e})")
-
-    return results
 
 
 def _run_visualizations(api: ExperimentFacade, graph_key: str):
@@ -170,7 +165,6 @@ def _run_visualizations(api: ExperimentFacade, graph_key: str):
 
 def main():
     api = ExperimentFacade()
-    reporter = Reporter()
     graph_key = _upload_graph(api)
 
     for i, scenario in enumerate(SCENARIOS, 1):
@@ -179,46 +173,16 @@ def main():
 
         data = _run_scenario(api, graph_key, scenario)
         if data is None:
-            reporter.add(ScenarioRecord(
-                label=scenario["label"],
-                algorithm=scenario["algorithm"],
-                nodes_before=0, edges_before=0,
-                nodes_after=0, edges_after=0,
-                metrics={}, deltas={},
-                error="run_job failed",
-            ))
             continue
 
-        # _print_scenario_results(data)
+        _print_scenario_results(data)
 
-        metrics_by_name = {
-            m["metric"]: m["summary"]
-            for m in data.get("metric_results", [])
-        }
-
-        deltas_by_name: dict = {}
+        # delta computation (requires both graphs to be in the repo)
         reduced_key = data.get("reduced_graph_key")
         if reduced_key:
-            deltas_by_name = _compute_deltas(
-                api, graph_key, reduced_key, scenario["params"]
-            )
+            _compute_deltas(api, graph_key, reduced_key, scenario["params"])
         else:
             print(" • deltas: skipped (no reduced_graph_key in response)")
-
-        reporter.add(ScenarioRecord(
-            label=scenario["label"],
-            algorithm=scenario["algorithm"],
-            nodes_before=data["nodes_before"],
-            edges_before=data["edges_before"],
-            nodes_after=data["nodes_after"],
-            edges_after=data["edges_after"],
-            metrics=metrics_by_name,
-            deltas=deltas_by_name,
-        ))
-
-    # ── summary report ────────────────────────────────────────────────────────
-
-    reporter.print_report()
 
     if VISUALIZE:
         _separator()
