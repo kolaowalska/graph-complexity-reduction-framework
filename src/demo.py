@@ -35,9 +35,9 @@ RELATIVE_METRICS = [
 
 SCENARIOS = [
     {
-        "label": "random sparsifier (p=0.3)",
+        "label": "random sparsifier (p=0.5)",
         "algorithm": "random",
-        "params": {"p": 0.3, "seed": 1312},
+        "params": {"p": 0.5, "seed": 1312},
     },
     {
         "label": "k-neighbor sparsifier (rho=0.5)",
@@ -49,10 +49,15 @@ SCENARIOS = [
         "algorithm": "local_degree",
         "params": {"rho": 0.5},
     },
-    {
-        "label": "graph coarsening (50% node reduction)",
-        "algorithm": "mock_coarsening",
-        "params": {"reduction_ratio": 0.5},
+    # {
+    #     "label": "graph coarsening (50% node reduction)",
+    #     "algorithm": "mock_coarsening",
+    #     "params": {"reduction_ratio": 0.5},
+    # },
+{
+        "label": "pagerank pruning (rho=0.5)",
+        "algorithm": "pagerank",
+        "params": {"rho": 0.5, "alpha": 0.85},
     },
     {
         "label": "merw sparsifier (rho=0.5)",
