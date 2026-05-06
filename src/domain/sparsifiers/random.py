@@ -33,6 +33,6 @@ class RandomSparsifier(Sparsifier):
 
         return Graph.from_networkx(
             H,
-            name=f"{graph.name}_random_{p}",
+            name=f"{graph.name}_random",
             metadata={"p": p}
         )

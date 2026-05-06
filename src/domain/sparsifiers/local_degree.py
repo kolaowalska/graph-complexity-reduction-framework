@@ -44,6 +44,6 @@ class LocalDegreeSparsifier(Sparsifier):
 
         return Graph.from_networkx(
             H,
-            name=f"{graph.name}_local_degree_{rho}",
-            metadata={"rho": rho, "algorithm": "local_degree"}
+            name=f"{graph.name}_local_degree",
+            metadata={"rho": rho}
         )
