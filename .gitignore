@@ -11,6 +11,7 @@ bin/
 lib/
 include/
 share/
+unused/
 
 .pytest_cache/
 .coverage
