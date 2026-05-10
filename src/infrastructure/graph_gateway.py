@@ -1,19 +1,25 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Optional, Hashable
 import networkx as nx
 import os
 from pathlib import Path
 
+from networkx import DiGraph, Graph
+
 from src.domain.graph_model import Graph
+
+_LOADERS = {
+    ".graphml": lambda path, source: nx.read_graphml(path),
+    ".gexf": lambda path, source: nx.read_gexf(path),
+    ".gml": lambda path, source: nx.read_gml(path, label="id"),
+    ".adjlist": lambda path, source: nx.read_adjlist(path, create_using=nx.DiGraph if source.directed else nx.Graph),
+}
 
 
 @dataclass
 class GraphSource:
-    """
-    [DTO] specifying where to find a graph and how it should be interpreted
-    """
     kind: str
     name: str
     value: Any = None
@@ -24,9 +30,9 @@ class GraphSource:
 
 class GraphGateway:
     """
-    [GATEWAY] to external graph data
+    [GATEWAY] to external graph data.
     """
-    def load(self, source: GraphSource) -> Graph:
+    def load(self, source: GraphSource) -> DiGraph[Hashable] | Graph[Hashable] | Graph:
         print(f"\n[GATEWAY] loading graph '{source.name}' from {source.kind}...")
 
         if source.kind == "file":
@@ -41,8 +47,13 @@ class GraphGateway:
             if not os.path.exists(path):
                 raise FileNotFoundError(f"file not found: {path}")
 
+            ext = os.path.splitext(str(path))[1].lower()
+
             def lazy_loader():
                 print(f"\n[LAZY LOAD] reading file {path}")
+
+                if ext in _LOADERS:
+                    return _LOADERS[ext](str(path), source)
 
                 create_using = nx.DiGraph if source.directed else nx.Graph
 
@@ -53,13 +64,12 @@ class GraphGateway:
                         create_using=create_using,
                         data=(('weight', float),)
                     )
-                else:
-                    return nx.read_edgelist(
-                        str(path),
-                        nodetype=int,
-                        create_using=create_using,
-                        data=False
-                    )
+                return nx.read_edgelist(
+                    str(path),
+                    nodetype=int,
+                    create_using=create_using,
+                    data=False
+                )
 
             return Graph.from_loader(name=source.name, loader_f=lazy_loader)
 
@@ -67,7 +77,6 @@ class GraphGateway:
             if source.value is None:
                 return nx.DiGraph() if source.directed else nx.Graph()
 
-            # TODO: strict conversion (source.value.to_directed()) if source.directed else ...
             return Graph.from_networkx(source.value, name=source.name)
 
         else:

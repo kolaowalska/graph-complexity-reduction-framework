@@ -14,8 +14,8 @@ class RandomSparsifier(Sparsifier):
     INFO = TransformInfo(name="random sparsifier", abbrev="rndm")
 
     def run(self, graph: Graph, params: RunParams) -> Graph:
-        p = params.get("p", 0.5)
-        seed = params.get("seed", 420)
+        p = float(params.get("p", 0.5))
+        seed = int(params.get("seed", 420))
 
         rng = random.Random(seed)
         G = graph.to_networkx()
