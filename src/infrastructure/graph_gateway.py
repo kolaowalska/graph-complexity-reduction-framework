@@ -57,8 +57,8 @@ class GraphGateway:
                     return nx.read_edgelist(
                         str(path),
                         nodetype=int,
-                        create_using=create_using
-                        # default: data=True
+                        create_using=create_using,
+                        data=False
                     )
 
             return Graph.from_loader(name=source.name, loader_f=lazy_loader)

@@ -19,7 +19,7 @@ def run_smoke() -> None:
     data_path = "src/data/toy.edgelist"
     if os.path.exists(data_path):
         print(f"[smoke] loading from file: {data_path}")
-        source = GraphSource(kind="file", value=data_path, name="toy-graph")
+        source = GraphSource(kind="file", value=data_path, name="toy-graph", weighted=True)
     else:
         print("[smoke] file not found, using in-memory fallback")
         g = nx.erdos_renyi_graph(20, 0.3, seed=42)

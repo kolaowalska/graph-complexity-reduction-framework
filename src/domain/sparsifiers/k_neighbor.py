@@ -3,7 +3,7 @@ import networkx as nx
 import numpy as np
 import math
 
-from domain.transforms.base import TransformInfo
+from src.domain.transforms.base import TransformInfo
 from src.domain.graph_model import Graph, RunParams
 from src.domain.sparsifiers.base import Sparsifier
 from src.domain.sparsifiers.registry import register_sparsifier
