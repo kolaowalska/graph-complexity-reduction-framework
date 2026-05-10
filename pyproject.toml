@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "graph-complexity-reduction-framework"
+version = "0.1.0"
+description = "a research environment for evaluating graph reduction algorithms"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+dependencies = [
+    "networkx>=3.0",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "matplotlib>=3.7",
+    "seaborn>=0.12",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+graph-reduce = "src.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.setuptools.package-data]
+"src.data" = ["*.edgelist"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["src/tests"]

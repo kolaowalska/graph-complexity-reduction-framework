@@ -25,7 +25,7 @@ the framework is built using domain-driven design principles and organized into 
 - `src/domain/` layer contains the core truth of the system, such as the `Graph` model, `Metric` definitions, and the abstract `GraphTransform` logic; it is purely focused on graph theory and the mathematics behind the graph algorithms
 - `src/application/` layer orchestrates the workflow via the `ExperimentService`, handling the "business logic" of running a research job without needing to know how graphs are stored and where they come from
 - `src/infrastructure/` layer takes care of details like reading graphs (`GraphGateway`), persisting results (`Repository`), and managing database transactions (`UnitOfWork`)
-- `src/interface/` layer provides entry points for the user including a CLI for automated batches and an API for potential integration with web dashboards
+- `src/interfaces/` layer provides entry points for the user including a CLI for automated batches and an API for potential integration with web dashboards
 
 ### the pipeline
 the program follows a defined lifecycle for every experiment.
@@ -36,18 +36,51 @@ the program follows a defined lifecycle for every experiment.
 5. __commitment__: the `UnitOfWork` ensures that both the new graph and the experiment results are saved to storage simultaneously, preventing dirty data resulting from errors
 
 ## quick start
-
-### experimental setup
-experiments are managed through the `ExperimentService`, which coordinates the lifecycle of importing, transforming and measuring graphs.
-
-### running the demo
+### installation
 1. clone or download the repository to your local machine
-2. open the terminal and navigate to the project's root directory 
-3. run the following demo that showcases the pipeline from ingestion to visualization:
-~~~python
-python src/demo.py
+2. open the terminal and navigate to the project's root directory
+3. run the following command:
+~~~bash
+pip install -e .
 ~~~
-this script runs a small selection of scenarios and outputs comparative metric results along with some basic graph visualizations.
+this makes the `graph-reduce` command available system-wide. a virtual environment is recommended.
+
+### discovering what's available
+before running an experiment, list the algorithms and metrics the framework is aware of:
+~~~bash
+graph-reduce list-algorithms
+graph-reduce list-metrics
+~~~
+
+### using the cli
+to perform an experiment, run the following command:
+~~~bash
+graph-reduce run --graph <path> --algorithm <name> [options]
+~~~
+
+**required:**
+  - `--graph` — path to your graph file; the format is inferred from the file extension
+  - `--algorithm` — name of the reduction algorithm to apply (from `list-algorithms`)
+  
+**optional:**
+  - `--metrics` — comma-separated list of metrics to compute, e.g. `diameter, clustering, community_preservation`
+  - `--params` — algorithm parameters, either as space-separated `key=value` pairs or a single json object
+  - `--output` — write results to a file instead of printing; supports `.json` and `.csv`
+  - `--directed` — treat the graph as directed (default: undirected)
+  - `--weighted` — treat the third column in the edgelist as edge weights (default: unweighted)
+
+### examples
+
+run random sparsification and print results to the terminal:
+~~~bash
+graph-reduce run --graph my_graph.edgelist --algorithm random --weighted --params p=0.4 seed=42 --metrics diameter,clustering
+~~~
+
+pass parameters as a json object and save results to a flat csv for further analysis:
+~~~bash
+graph-reduce run --graph my_graph.edgelist --algorithm k_neighbor --weighted --params '{"rho": 0.5}' --metrics edge_density,spectral_similarity --output results.csv
+~~~
+
 
 ## extensibility
 ### algorithm agnosticism
