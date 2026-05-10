@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Optional, Hashable
-import networkx as nx
 import os
-from pathlib import Path
-
+import networkx as nx
 from networkx import DiGraph, Graph
+from dataclasses import dataclass
+from typing import Any, Hashable
 
 from src.domain.graph_model import Graph
 
@@ -25,8 +23,6 @@ class GraphSource:
     value: Any = None
     directed: bool = False
     weighted: bool = False
-    # fmt: Optional[str] = "edgelist"
-
 
 class GraphGateway:
     """
