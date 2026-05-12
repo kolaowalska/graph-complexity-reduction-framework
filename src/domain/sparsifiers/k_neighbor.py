@@ -14,8 +14,8 @@ class KNeighborSparsifier(Sparsifier):
     INFO = TransformInfo(name="k-neighbor sparsifier", abbrev="k-n")
 
     def run(self, graph: Graph, params: RunParams) -> Graph:
-        rho = params.get("rho", 0.5) # TODO: outsource pruning parameter
-        seed = params.get("seed", 420)
+        rho = float(params.get("rho", 0.5))
+        seed = int(params.get("seed", 420))
         rng = np.random.default_rng(seed)
 
         G = graph.to_networkx(copy=False)

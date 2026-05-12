@@ -13,7 +13,7 @@ class LocalDegreeSparsifier(Sparsifier):
     INFO = TransformInfo(name="local degree sparsifier", abbrev="ld")
 
     def run(self, graph: Graph, params: RunParams) -> Graph:
-        rho = params.get("rho", 0.5)
+        rho = float(params.get("rho", 0.5))
 
         G = graph.to_networkx(copy=False)
         H = nx.DiGraph() if G.is_directed() else nx.Graph()
