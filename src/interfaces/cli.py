@@ -91,7 +91,11 @@ def cmd_run(args) -> int:
         return 1
 
     metrics = [m.strip() for m in args.metrics.split(",")] if args.metrics else []
-    params = _parse_params(args.params)
+    try:
+        params = _parse_params(args.params)
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 1
 
     run_resp = facade.run_job({
         "graph_key": upload_resp["graph_key"],
