@@ -19,9 +19,10 @@ class Clustering(Metric):
 
     def compute(self, graph: Graph, params: RunParams) -> MetricResult:
         g = graph.to_networkx(copy=False)
+        weight_arg = "weight" if graph.is_weighted() else None
         g_undirected = g.to_undirected() if g.is_directed() else g
 
-        avg_clustering = float(nx.average_clustering(g_undirected))
+        avg_clustering = float(nx.average_clustering(g_undirected, weight=weight_arg))
         transitivity = float(nx.transitivity(g_undirected))
 
         return MetricResult(
@@ -29,5 +30,6 @@ class Clustering(Metric):
             summary={
                 "avg_clustering": avg_clustering,
                 "transitivity": transitivity,
+                "weighted": bool(weight_arg),
             }
         )

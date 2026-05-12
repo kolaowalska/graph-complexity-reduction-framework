@@ -17,6 +17,7 @@ class Diameter(Metric):
 
     def compute(self, graph: Graph, params: RunParams) -> MetricResult:
         g = graph.to_networkx(copy=False)
+        weight_arg = "weight" if graph.is_weighted() else None
         g_undirected = g.to_undirected() if g.is_directed() else g
 
         if g_undirected.number_of_nodes() == 0:
@@ -31,8 +32,9 @@ class Diameter(Metric):
         return MetricResult(
             metric=self.INFO.name,
             summary={
-                "diameter": float(nx.diameter(subgraph)),
+                "diameter": float(nx.diameter(subgraph, weight=weight_arg)),
                 "component_nodes": subgraph.number_of_nodes(),
                 "total_nodes": g_undirected.number_of_nodes(),
+                "weighted": bool(weight_arg),
             },
         )
